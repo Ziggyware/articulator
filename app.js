@@ -974,12 +974,40 @@ function loadSavedIdea(id) {
   renderPrompt();
   saveDraftSoon();
   closeDialog(elements.shelfDialog);
+  setWorkspaceView('studio', false);
   document.getElementById('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
   showToast('Idea opened in the studio');
 }
 
+function setWorkspaceView(view, shouldScroll = true) {
+  const showWorkbench = view !== 'studio';
+  const workbench = document.getElementById('workbenchMain');
+  const studio = document.getElementById('main');
+  const workbenchNav = document.getElementById('workbenchNav');
+  const studioNav = document.getElementById('studioNav');
+  if (workbench) workbench.hidden = !showWorkbench;
+  if (studio) studio.hidden = showWorkbench;
+  [
+    [workbenchNav, showWorkbench],
+    [studioNav, !showWorkbench],
+  ].forEach(([button, active]) => {
+    if (!button) return;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  const breadcrumb = document.getElementById('workspaceBreadcrumb');
+  const title = document.getElementById('workspaceTitle');
+  if (breadcrumb) breadcrumb.textContent = showWorkbench ? 'WORKBENCH' : 'STUDIO';
+  if (title) title.textContent = showWorkbench ? 'Semantic direction' : 'New exploration';
+  if (shouldScroll) {
+    const target = showWorkbench ? workbench : studio;
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function initialize() {
   restoreDraft();
+  setWorkspaceView('workbench', false);
   updateCharCount();
   updateShelfCount();
   renderPrompt();
@@ -1063,9 +1091,12 @@ function initialize() {
     renderShelf();
     openDialog(elements.shelfDialog);
   });
-  document.getElementById('studioNav').addEventListener('click', () => {
-    document.getElementById('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelector('.brand').addEventListener('click', (event) => {
+    event.preventDefault();
+    setWorkspaceView('workbench');
   });
+  document.getElementById('workbenchNav').addEventListener('click', () => setWorkspaceView('workbench'));
+  document.getElementById('studioNav').addEventListener('click', () => setWorkspaceView('studio'));
   document.querySelectorAll('[data-close-dialog]').forEach((button) => {
     button.addEventListener('click', () => closeDialog(button.closest('dialog')));
   });
